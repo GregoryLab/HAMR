@@ -1,0 +1,6 @@
+# Files needed to annotate tRNAs in a genome:
+
+# Genome sequence (single FASTA file)
+# Gene & repeat,etc. annotation incl. tRNAs (gff)
+# tRNA locations (bed)
+
