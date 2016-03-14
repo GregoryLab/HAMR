@@ -30,9 +30,14 @@ import re
 import os.path
 from distutils import spawn
 
+RSCRIPT=spawn.find_executable("Rscript")
+if RSCRIPT is None:
+   print "***ERROR: Rscript is not found"
+   sys.exit("Please instal R / Rscript or make sure it is in the path")
+
 SAMTOOLS=spawn.find_executable("samtools")
 if SAMTOOLS is None:
-   print  "***WARNING: samtools is not found"
+   print  "***ERROR: samtools is not found"
    sys.exit("Please install samtools or make sure it is in the path")
 
 # command line arguments
@@ -198,7 +203,7 @@ print "testing for statistical significance..."
 last_tmp_file= final_freq_table #rTag+'.txt'
 raw_file=output_folder+'/'+args.out_prefix+'.raw.txt'
 outfn=open(raw_file,'w')
-subprocess.check_call(['Rscript',detect_mods_definite,last_tmp_file,args.seq_err,args.hypothesis,args.max_p,args.max_fdr,args.refpercent],stdout=outfn)
+subprocess.check_call([RSCRIPT,detect_mods_definite,last_tmp_file,args.seq_err,args.hypothesis,args.max_p,args.max_fdr,args.refpercent],stdout=outfn)
 outfn.close()
 
 print "predicting modification identity..."
@@ -207,7 +212,7 @@ true_mods = int(retOut)
 prediction_file=output_folder+'/'+args.out_prefix+'.mods.txt'
 if (true_mods > 0):
     outfn=open(prediction_file,'w')
-    subprocess.check_call(['Rscript',classify_mods,raw_file,args.prediction_training_set],stdout=outfn)
+    subprocess.check_call([RSCRIPT,classify_mods,raw_file,args.prediction_training_set],stdout=outfn)
     outfn.close()
 else:
 	sys.exit("No HAMR modifications predicted, output will contain raw table only\nHAMR analysis complete\n\n------------------------------\n")
