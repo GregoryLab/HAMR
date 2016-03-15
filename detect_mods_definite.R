@@ -41,12 +41,12 @@ x$ref = rowSums(x[,nucs]) - x$nonref
 
 # FIXME: what is 50 threshold? this should be min acceptable coverage????
 # this filtering is not based on statistical significance and should be moved outside/upstream of this function
-x<-x[which(x$nonref+x$ref>=50),]
+#x<-x[which(x$nonref+x$ref>=50),]
 
 # FIXME: filter out rows with ref nuc percentage that is too low
 # this does not belong here, this filtering is not based on significance
 # and should be done upstream (before this function is called!!!)  
-x<-x[which(x$ref/(x$ref+x$nonref)>(refpercent/100)),]
+#x<-x[which(x$ref/(x$ref+x$nonref)>(refpercent)),]
 
 
 hyps = c('AA', 'AC', 'AG', 'AT', 'CC', 'CG', 'CT', 'GG', 'GT', 'TT')

@@ -60,18 +60,12 @@ parser.add_argument('max_p',help='The maximum p-value cutoff')
 parser.add_argument('max_fdr',help='The maximum FDR cutoff')
 parser.add_argument('refpercent',help='The percentage of reads that must match the reference nucleotide')
 parser.add_argument('--normalization_bed', '-n', action='store', dest='normalization_bed', nargs='?', default='unspecified', help='Specifies intervals that define the "universe" for normalization; e.g. all mRNAs. If unspecified, defaults to whole genome')
-parser.add_argument('--normalization_prefix', '-np', action='store', dest='normalization_prefix' ,nargs='?', default='unspecified', help='Specifies name of "universe" for normalization; e.g. all "mRNA". If unspecified, defaults to "norm_universe"')
 parser.add_argument('--paired_ends','-pe',action='store_true',help='Use this tag to indicate paired-end sequencing')
 parser.add_argument('--filter_ends','-fe',action='store_true',help='Exclude the first and last nucleotides of a read from the analysis')
-parser.add_argument('--hamr_acc_threshold','-t',action='store', dest='hamr_acc_threshold', nargs='?', default='unspecified', help='(Integer) Manually specify the threshold for HAMR accessibility')
 
-#	Note: For this code, to add the unstrandedness feature back,
-#	please uncomment the three lines below
-#parser.add_argument('--unstranded','-us',action='store_true',help='Use this tag to indicate that the sequencing library is unstranded, libraries are assumed to be strand-specific')
 args=parser.parse_args()
 
 
-print "Let's rock"
 #Raise error if hypothesis has invalid value
 if args.hypothesis != 'H1' and args.hypothesis != 'H4':
     raise ValueError('Hypothesis must be H1 or H4.')
@@ -90,21 +84,11 @@ pairedends=""
 if (args.paired_ends):
     pairedends="--paired"
 
-#	Note: For this code, to add the unstrandedness feature back,
-#	please uncomment the three lines below
-#not_strand_specific=""   
-#if (args.unstranded):
-#    not_strand_specific="--noss"
-
-   
 #Check for output directory and make it if neccessary
 output_folder = re.sub('\/$', '', args.output_folder)
 subprocess.check_call(['mkdir', '-p', output_folder])
 if  os.path.isdir(args.output_folder): #if no out dir then make one
     print "existing output folder detected, will overwrite internal files unless program is broken..."
-#else:
-#    output_folder_name = output_folder #'./'+output_folder
-#    subprocess.check_call(['mkdir', output_folder_name])
 
 # make tmp directory if necessary
 tmpDIR=output_folder + '/tmp'
@@ -144,19 +128,6 @@ print "BAM for HAMR analysis: " + bamForAnalysis
 print 'Running RNApileup ' + rnapileup
 mmbed4=open(rTag+'.bed4','w')
 subprocess.check_call([rnapileup,bamForAnalysis,args.genome_fas,pairedends],stdout=mmbed4)
-#	Note: For this code, to add the unstrandedness feature back,
-#	please uncomment the second if and 2 elif statements below.
-#	Comment out this first if statement.
-#if (args.paired_ends):
-#    subprocess.check_call([rnapileup,bamForAnalysis,args.genome_fas,pairedends],stdout=mmbed4)
-#if ( not args.unstranded and args.paired_ends):
-#    subprocess.check_call([rnapileup,args.bam,args.genome_fas,pairedends],stdout=mmbed4)
-#elif (args.unstranded and args.paired_ends):
-#    subprocess.check_call([rnapileup,not_strand_specific,args.bam,args.genome_fas,pairedends],stdout=mmbed4)
-#elif ( args.unstranded and not args.paired_ends):
-#    subprocess.check_call([rnapileup,not_strand_specific,args.bam,args.genome_fas],stdout=mmbed4)
-#else:
-#    subprocess.check_call([rnapileup,bamForAnalysis,args.genome_fas],stdout=mmbed4)
 mmbed4.close()
 
 print 'Running filter_pileup...'
@@ -168,7 +139,6 @@ mmbed3.close()
 print ("Filter coverage...")
 ## this will output ALL sites with read depth >= min_cov!!
 ## this will be the total # of sites for HAMR analysis
-## HAMR_accesible_bases should really be set to this #!!!!!!
 mmbed2=open(rTag+'.bed2','w')
 input_mmbed2=rTag+'.bed3'
 subprocess.check_call(['awk','$4>=' + str(args.min_cov),input_mmbed2],stdout=mmbed2) 
@@ -228,27 +198,11 @@ outfn=open(bed_file,'w')
 subprocess.check_call(['awk', 'FNR > 1 {print $1"\t"$2"\t"(1+$2)"\t"$1";"$2"\t"$16"\t"$3}', prediction_file],stdout=outfn)
 outfn.close()
 
-## what is the purpose/meaning of this threshold??
-'''
-#calculate threshold for HAMR-accessibility unless manually specified
-if (args.hamr_acc_threshold == 'unspecified'):
-    print "calculating threshold of HAMR-accessibility...",
-    retOut=subprocess.check_output(['awk', 'BEGIN{minCov=100000}{if (NR==1) next; currCov=$9+$10; if (minCov>currCov) minCov=currCov;}END{print minCov;}', raw_file])
-    threshold=int(retOut)
-    # save minCov threshold into file
-    min_cov_file=output_folder+'/'+args.out_prefix+".min_cov.txt"
-    outfn=open(min_cov_file,'w')
-    outfn.write(args.out_prefix+'\t'+str(threshold)+'\n')
-    outfn.close()
-else: 
-    threshold=int(args.hamr_acc_threshold)
-'''
 threshold = int(args.min_cov)
 print "calculating number of HAMR-accessible bases..."
 # this is readily available from the filtered by min_cov pileup file
 filt_pileup_file=rTag+'.bed2'
 retOut=subprocess.check_output(['awk', 'END{print NR}',filt_pileup_file])
-#retOut=subprocess.check_output(['awk', '{cov=$9+$10; a+=(cov>='+str(threshold)+')}END{print a}',raw_file])
 HAMR_accessible_bases = int(retOut) 
 
 
