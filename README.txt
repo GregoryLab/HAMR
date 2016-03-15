@@ -15,7 +15,7 @@ Examples:
 python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis  30 10 0.01 H4 0.01 0.05 0.05
 
 # BED-restricted
-python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis_bed 30 10 0.01 H4 0.01 0.05 0.05 --normalization_bed region.bed 	
+python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis_bed 30 10 0.01 H4 0.01 0.05 0.05 --target_bed region.bed 	
 	
 NOTE: Python with version v2.7.x is preferred. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
 
@@ -49,7 +49,7 @@ will be filtered out.
  
 
 OPTIONS:
-	--normalization_bed <file.bed>
+	--target_bed <file.bed>
 		BED file with regions of interest for HAMR analysis (this replaces the default genome-wide HAMR mode and restricts HAMR analysis to specific genomic regions listed in BED)
 	--paired_ends, -pe
 		indicates paired-end sequencing was used 
