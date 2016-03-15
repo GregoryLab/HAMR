@@ -20,10 +20,15 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
+import sys
+
+if sys.hexversion < 0x020700F0:
+    print "Detected Python " + sys.version
+    sys.exit("***ERROR: Must be using Python 2.7.x (recommended)")
+
 import argparse
 import subprocess
 import os
-import sys
 import datetime
 import time
 import re
@@ -33,12 +38,12 @@ from distutils import spawn
 RSCRIPT=spawn.find_executable("Rscript")
 if RSCRIPT is None:
    print "***ERROR: Rscript is not found"
-   sys.exit("Please instal R / Rscript or make sure it is in the path")
+   sys.exit("Please instal R / Rscript or make sure it is in the PATH")
 
 SAMTOOLS=spawn.find_executable("samtools")
 if SAMTOOLS is None:
    print  "***ERROR: samtools is not found"
-   sys.exit("Please install samtools or make sure it is in the path")
+   sys.exit("Please install samtools or make sure it is in the PATH")
 
 # command line arguments
 parser = argparse.ArgumentParser(description="Takes a bam file that has been sorted with redundant reads removed and generates a HAMR predicted_mods.txt output")
