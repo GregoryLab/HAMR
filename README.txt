@@ -1,30 +1,43 @@
 
-HAMR takes a bam file that has been sorted with redundant reads removed and generates a HAMR predicted_mods.txt output
+HAMR takes in a coordinate-sorted BAM file (reads should be mapped with m>0 mismatches: patterns of mismatches will be used to detect and predict identity of modifications). HAMR outputs predicted in mods.txt.
+
+NOTE: Only continuous, un-interrupted read alignments will be used.
+Any spliced aligments should be resolved (e.g, by splitting) before
+running HAMR (spliced alignments in BAM (if any) will be ignored). Alignments with insertion/deletions will be ignored. 
 
 Operating instructions:
-	To run HAMR, run hamr_code_sk.py  following arguments while in this directory:
-		python2.7 hamr_code_sk.py [bam] [genome_fas] [min_qual] [min_cov] [seq_err] [hypothesis] [max_p] [max_fdr] [refpercent] [out_file] (optional)--paired_ends (optional)--filter_ends
+To run HAMR pipeline:
+python hamr.py [align.bam] [genome.fa] [prediction_model] [output_dir] [output_prefix] [min_read_qual] [min_read_coverage] [seq_error_rate] [hypothesis] [max_p] [max_fdr] [refpercent] --paired_ends (optional)--filter_ends (optional) --normalization_bed <region.bed> (optional)
 
-	Required Arguments:
+Examples:
+# genome-wide
+python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis  30 10 0.01 H4  1 0.05 0.05
+
+# BED-restricted
+python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis_bed 30 10 0.01 H4  1 0.05 0.05 --normalization_bed region.bed 	
+	
+NOTE: Python with version v2.7.x is preferred. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
+
+
+Required Arguments:
 		bam 		-The Directory location and name of bam file consisting of nonredundant reads that you wish to use.
-		genome_fas 	-The Directory Genome fasta file that you wish to use. WARNING: remember to index the reference using samtools faifx before running hamr_code_sk.py
-		min_qual	-The minimum threshhold of a read's quality score for it to be analyzed
-		min_cov		-The minimum coverage of a nucleotide for it to be analyzed
-		seq_err		-The percentage of mismatches based solely on sequencing error
+		genome_fas 	-The Directory Genome fasta file that you wish to use. WARNING: remember to index the reference using samtools faifx before running hamr.py
+		min_qual	-The minimum threshhold of a base calling quality score for it to be analyzed
+		min_cov		-The minimum read coverage of a position for it to be analyzed
+		seq_err		-The expected percentage of mismatches based solely on sequencing error
 		hypothesis	-The hypothesis to be tested, either "H1" or "H4"
 		max_p		-The maximum p-value cutoff
 		max_fdr		-The maximum FDR cutoff
 		refpercent	-The percentage of reads that must match the reference nucleotide
-		out_file	-The directory location and filename for the  HAMR predicted_mods output
+		output_dir	-The directory location for the  HAMR output
+                output_prefix   -prefix for HAMR output files
  
 	Optional Arguements:
+                --normalization_bed <file.bed> BED file with regions of
+interest for HAMR analysis (this replaces the default genome-wide HAMR mode)
 		--paired_ends, -pe	Indicates paired-end sequencing was used
 		--filter_ends,-fe	Excludes the first and last nucleotides of a read from the analysis
 
-
-
-Other Info:
-	The compiled rnapileup script include in the directory is statically compiled. It can be run without the samtools library installed. In the event of bugfixes in the samtools library, however, rnapileupV2.2.1 will need to be recompiled before the bugfixes take effect.
 
 
 Copyright:
