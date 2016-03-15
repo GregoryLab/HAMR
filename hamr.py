@@ -59,7 +59,7 @@ parser.add_argument('hypothesis',help='The hypothesis to be tested, either "H1" 
 parser.add_argument('max_p',help='The maximum p-value cutoff')
 parser.add_argument('max_fdr',help='The maximum FDR cutoff')
 parser.add_argument('refpercent',help='The percentage of reads that must match the reference nucleotide')
-parser.add_argument('--normalization_bed', '-n', action='store', dest='normalization_bed', nargs='?', default='unspecified', help='Specifies intervals that define the "universe" for normalization; e.g. all mRNAs. If unspecified, defaults to whole genome')
+parser.add_argument('--target_bed', '-n', action='store', dest='target_bed', nargs='?', default='unspecified', help='Specifies genomic intervals for analysis; e.g. all mRNAs. If unspecified, defaults to whole genome')
 parser.add_argument('--paired_ends','-pe',action='store_true',help='Use this tag to indicate paired-end sequencing')
 parser.add_argument('--filter_ends','-fe',action='store_true',help='Exclude the first and last nucleotides of a read from the analysis')
 
@@ -103,14 +103,14 @@ rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.mismatches' #date included in file
 
 run_mode = "genome-wide"
-if (args.normalization_bed != 'unspecified'):
+if (args.target_bed != 'unspecified'):
    run_mode = 'targeted'
 inputBAM=args.bam
 print 'Analyzing %s (%s)' %(inputBAM, run_mode)
 bamForAnalysis = inputBAM
-if (args.normalization_bed != 'unspecified'):
+if (args.target_bed != 'unspecified'):
 	# extract alignments for the region(s) of interest
-        target_bed = args.normalization_bed
+        target_bed = args.target_bed
         print 'Target BED is specified: ' + target_bed
         print 'Restricting BAM to regions in ' + target_bed
         inputBAMbasename=os.path.basename(inputBAM)
