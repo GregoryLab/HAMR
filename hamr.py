@@ -24,7 +24,7 @@ import sys
 
 if sys.hexversion < 0x020700F0:
     print "Detected Python " + sys.version
-    sys.exit("***ERROR: Must be using Python 2.7.x (recommended)")
+    sys.exit("***ERROR: Must be using Python 2.7.x (recommended) or above")
 
 import argparse
 import subprocess
@@ -100,7 +100,7 @@ subprocess.check_call(['mkdir', '-p', tmpDIR])
 now = datetime.datetime.now()
 datelist = [str(now.year),str(now.month),str(now.day),str(now.hour),str(now.minute),str(now.second),str(now.microsecond)]
 rightnow= "_".join(datelist)
-rTag=tmpDIR + '/' + rightnow + '.mismatches' #date included in file
+rTag=tmpDIR + '/' + rightnow + '.HAMR' #date included in file
 
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
@@ -126,37 +126,38 @@ print "BAM for HAMR analysis: " + bamForAnalysis
 
 
 print 'Running RNApileup ' + rnapileup
-mmbed4=open(rTag+'.bed4','w')
-subprocess.check_call([rnapileup,bamForAnalysis,args.genome_fas,pairedends],stdout=mmbed4)
-mmbed4.close()
+rawpileup=rTag+'.pileup.raw'
+frawpileup=open(rawpileup,'w')
+subprocess.check_call([rnapileup,bamForAnalysis,args.genome_fas,pairedends],stdout=frawpileup)
+frawpileup.close()
 
 print 'Running filter_pileup...'
-mmbed3=open(rTag+'.bed3','w')
-input_mmbed3=rTag+'.bed4'
-subprocess.check_call([filter_pileup,input_mmbed3,str(args.min_qual),str(int(args.filter_ends))],stdout=mmbed3)
-mmbed3.close()
+filteredpileup=rTag+'.pileup.filtered'
+ffilteredpileup=open(filteredpileup,'w')
+subprocess.check_call([filter_pileup,rawpileup,str(args.min_qual),str(int(args.filter_ends))],stdout=ffilteredpileup)
+ffilteredpileup.close()
 
 print ("Filter coverage...")
 ## this will output ALL sites with read depth >= min_cov!!
 ## this will be the total # of sites for HAMR analysis
-mmbed2=open(rTag+'.bed2','w')
-input_mmbed2=rTag+'.bed3'
-subprocess.check_call(['awk','$4>=' + str(args.min_cov),input_mmbed2],stdout=mmbed2) 
-mmbed2.close()
+filteredpileupcov=rTag+'.pileup.filtered.'+str(args.min_cov)
+ffilteredpileupcov=open(filteredpileupcov,'w')
+subprocess.check_call(['awk','$4>=' + str(args.min_cov),filteredpileup],stdout=ffilteredpileupcov) 
+ffilteredpileupcov.close()
 
 
 
 print 'Running rnapileup2mismatchbed...'
 # convert pileups into BED file with entry corresponding to the observed (ref nuc) --> (read nucleotide) transitions
-mmbed=open(rTag+'.bed','w')
-input_mmbed=rTag+'.bed2'
-subprocess.check_call([rnapileup2mismatchbed,input_mmbed],stdout=mmbed)
-mmbed.close()
+mismatchbed=rTag+'.mismatch.bed'
+fmismatchbed=open(mismatchbed,'w')
+subprocess.check_call([rnapileup2mismatchbed,filteredpileupcov],stdout=fmismatchbed)
+fmismatchbed.close()
 
 print "converting mismatch BED to nucleotide frequency table"
 # mismatchbed2table outputs all sites with at least 1 non-ref nuc
-final_bed_file=rTag+'.bed'
-freq_table=rTag+'.txt'
+final_bed_file=mismatchbed
+freq_table=rTag+'.freqtable.txt'
 txt_output=open(freq_table,'w')
 subprocess.check_call([mismatchbed2table, final_bed_file],stdout=txt_output)
 txt_output.close()
@@ -165,7 +166,7 @@ txt_output.close()
 # filter by:
 #  min ref nuc pct
 #  non-ref/ref > 1%
-final_freq_table=rTag+'.final.txt'
+final_freq_table=rTag+'.freqtable.final.txt'
 min_ref_pct=args.refpercent
 outf=open(final_freq_table,'w')
 #subprocess.check_call(['awk','{cov=$5+$6+$7+$8;nonref=$9; ref=cov-nonref; if (ref/cov>=0.05 && nonref/ref>=0.01) print;}', freq_table],stdout=outf)
@@ -201,7 +202,7 @@ outfn.close()
 threshold = int(args.min_cov)
 print "calculating number of HAMR-accessible bases..."
 # this is readily available from the filtered by min_cov pileup file
-filt_pileup_file=rTag+'.bed2'
+filt_pileup_file=filteredpileupcov
 retOut=subprocess.check_output(['awk', 'END{print NR}',filt_pileup_file])
 HAMR_accessible_bases = int(retOut) 
 
