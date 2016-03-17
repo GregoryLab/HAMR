@@ -5,17 +5,27 @@ NOTE: Only continuous, un-interrupted read alignments will be used.
 Any spliced alignments should be resolved (e.g., by splitting) before
 running HAMR (spliced alignments in BAM (if any) will be ignored). Alignments with insertion/deletions will be ignored. 
 
+Installing HAMR: 
+HAMR includes pre-compiled binary programs.
+If neccessary, to re-compile use
+make clean
+make
+
 Operating instructions:
 
-To run HAMR pipeline:
+Usage:
 python hamr.py [align.bam] [genome.fa] [prediction_model_file] [output_dir] [output_prefix] [min_read_qual] [min_read_coverage] [seq_error_rate] [hypothesis] [max_p] [max_fdr] [min_ref_percent] [OPTIONS]
 
 Examples:
-# genome-wide
-python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis  30 10 0.01 H4 0.01 0.05 0.05
+# download reference genome (e.g., hg19)
+wget http://tesla.pcbi.upenn.edu/hamr/genomes/hg19_all_chr.fas
 
-# BED-restricted
-python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis_bed 30 10 0.01 H4 0.01 0.05 0.05 --target_bed region.bed 	
+# run HAMR in genome-wide mode
+python hamr.py trial.human.bam  genomes/hg19_all_chr.fas models/euk_trna_mods.Rdata HAMRtest human 30 10 0.05 H4 0.01 0.05 0.05
+
+# run HAMR in target mode (BED-restricted)
+python hamr.py trial.human.bam  genomes/hg19_all_chr.fas models/euk_trna_mods.Rdata HAMRtest human_region 30 10 0.05 H4 0.01 0.05 0.05 --target_bed region.human.bed
+
 	
 NOTE: Python with version v2.7.x is preferred. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
 
@@ -49,12 +59,12 @@ will be filtered out.
  
 
 OPTIONS:
-	--target_bed <file.bed>
+	--target_bed <targets.bed>
 		BED file with regions of interest for HAMR analysis (this replaces the default genome-wide HAMR mode and restricts HAMR analysis to specific genomic regions listed in BED)
 	--paired_ends, -pe
 		indicates paired-end sequencing was used 
 	--filter_ends,-fe
-		excludes the first and last nucleotides of a read from the analysis
+		excludes the first and last positions in the read from the analysis
 
 
 

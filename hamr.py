@@ -76,7 +76,7 @@ rnapileup=hamr_dir+"/"+"rnapileup" #C-script
 filter_pileup=hamr_dir+"/"+"filter_pileup" #C-script
 rnapileup2mismatchbed=hamr_dir+"/"+"rnapileup2mismatchbed" #C-script
 mismatchbed2table=hamr_dir+"/"+"mismatchbed2table.sh" #Shell script
-detect_mods_definite=hamr_dir+"/"+"detect_mods_definite.R" #R script
+detect_mods_definite=hamr_dir+"/"+"detect_mods.R" #R script
 classify_mods=hamr_dir+"/"+"classify_mods.R" #Rscript
 
 #get flags
@@ -101,6 +101,7 @@ now = datetime.datetime.now()
 datelist = [str(now.year),str(now.month),str(now.day),str(now.hour),str(now.minute),str(now.second),str(now.microsecond)]
 rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.HAMR' #date included in file
+rTag=tmpDIR + '/' + 'debug'
 
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
