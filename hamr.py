@@ -101,7 +101,7 @@ now = datetime.datetime.now()
 datelist = [str(now.year),str(now.month),str(now.day),str(now.hour),str(now.minute),str(now.second),str(now.microsecond)]
 rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.HAMR' #date included in file
-rTag=tmpDIR + '/' + 'debug'
+rTag=tmpDIR + '/' + 'HAMR'
 
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
@@ -220,3 +220,8 @@ outfn.close()
 
 #conclusion message
 print "HAMR analysis complete\n\n------------------------------\n"
+# final_freq_table contains sites with ref / non-ref nucleotide mixtures
+print "Sites used for analysis: %s" % final_freq_table
+print "Statistical testing results: %s" % raw_file
+print "Modification sites + predicted types saved to: %s" % prediction_file
+
