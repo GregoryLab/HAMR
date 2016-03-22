@@ -8,7 +8,7 @@ endif
 all: rnapileup filter_pileup rnapileup2mismatchbed 
 
 samtoolssrc:
-	$(MAKE) -C samtools01
+	$(MAKE) -C samtools
 
 rnapileup: rnapileup.cpp
 	g++ -O2 -L $(SAMTOOLS_DIR) -I $(SAMTOOLS_DIR) $? -o $@ -l$(LIBBAM) -lz
