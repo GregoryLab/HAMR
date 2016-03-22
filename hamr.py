@@ -86,12 +86,12 @@ if (args.paired_ends):
 
 #Check for output directory and make it if neccessary
 output_folder = re.sub('\/$', '', args.output_folder)
-subprocess.check_call(['mkdir', '-p', output_folder])
 if  os.path.isdir(args.output_folder): #if no out dir then make one
     print "existing output folder detected, will overwrite internal files unless program is broken..."
+subprocess.check_call(['mkdir', '-p', output_folder])
 
 # make tmp directory if necessary
-tmpDIR=output_folder + '/tmp'
+tmpDIR=output_folder + '/HAMR_temp'
 subprocess.check_call(['mkdir', '-p', tmpDIR])
 
 
@@ -101,7 +101,7 @@ now = datetime.datetime.now()
 datelist = [str(now.year),str(now.month),str(now.day),str(now.hour),str(now.minute),str(now.second),str(now.microsecond)]
 rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.HAMR' #date included in file
-rTag=tmpDIR + '/' + 'HAMR'
+rTag=tmpDIR + '/' + 'HAMR.' + args.out_prefix
 
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
