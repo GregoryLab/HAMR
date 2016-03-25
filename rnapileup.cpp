@@ -32,6 +32,7 @@
 //
 //  2.2 - Added support for paired-end reads via the --paried option
 //  	2.2.1 - fixed bug when dealing with reads with length > 127 (can now handle up to 255)
+//  2.3 - Fixed handling of non-continuous (spliced) alignments. Only un-spliced, continuos aligments are used for contructing pileup.
 
 // #define DEBUGMODE
 
