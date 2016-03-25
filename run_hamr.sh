@@ -8,7 +8,7 @@ minP=0.01
 minQ=0.05
 minRefPct=0.05
 BAM="trial.human.bam"
-GENOME="/data/users/pkuksa/datasets/hg19/hg19.fa"
+GENOME="hg19.fa"
 OUTDIR="HAMRtrial"
 model=models/euk_trna_mods.Rdata
 
