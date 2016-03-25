@@ -157,6 +157,7 @@ int main( int argc, char **argv) {
     }
 
     //cout << "\t" << new_quals << "\t" << new_pos << "\n";
+  // output qual, position string, and strand
   cout << "\t" << new_quals << "\t" << new_pos << "\t" << strandstr << "\n";
   }
 

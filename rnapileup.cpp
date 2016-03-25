@@ -21,18 +21,19 @@
 /* rnapileup
      generates pileup for RNAseq data:
       - genomic strands are treated separately
-      - does not support indels
+      - does not support indels 
+      - does not support non-continuous alignments
 */
 
-//  2.0 - adds another column with position-along-read data
+//  1.0 - adds another column with position-along-read data
 //        (Sanger encoded just like base quals; X-33 = position along
 //          read from 5' end, starting at 0)
 
-//  2.1 - Now supports soft-clipping and discards reads with indels
+//  1.0 - Now supports soft-clipping and discards reads with indels
 //
-//  2.2 - Added support for paired-end reads via the --paried option
+//  1.1 - Added support for paired-end reads via the --paried option
 //  	2.2.1 - fixed bug when dealing with reads with length > 127 (can now handle up to 255)
-//  2.3 - Fixed handling of non-continuous (spliced) alignments. Only un-spliced, continuos aligments are used for contructing pileup.
+//  1.2 - Fixed handling of non-continuous (spliced) alignments. Only un-spliced, continuos aligments are used for contructing pileup.
 
 // #define DEBUGMODE
 
