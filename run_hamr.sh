@@ -1,6 +1,26 @@
+set -e
+
+# HAMR parameters
+minQ=30
+minReadCov=50
+seqErr=0.05
+minP=0.01
+minQ=0.05
+minRefPct=0.05
+BAM="trial.human.bam"
+GENOME="/data/users/pkuksa/datasets/hg19/hg19.fa"
+OUTDIR="HAMRtrial"
+model=models/euk_trna_mods.Rdata
+
 # genome-wide
-python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis  30 10 0.01 H4  1 0.05 0.05
+EXPNAME="trial"
+HAMR_command="python hamr.py ${BAM} ${GENOME} ${model} ${OUTDIR} ${EXPNAME} ${minQ} ${minReadCov} ${seqErr} H4  ${minP} ${minQ} ${minRefPct}" 
+echo -e "\n\nHAMR (genome-wide):\n${HAMR_command}"
+${HAMR_command} || echo -e "\n\n***Failed to run:\n${HAMR_command} "
 
 # BED-restricted
-python hamr.py trial.bam  genomes/Arabidopsis_thaliana.TAIR10.25.dna.genome.fa models/euk_trna_mods.Rdata HAMRtest arabidopsis_bed 30 10 0.01 H4  1 0.05 0.05 --normalization_bed region.bed 
+EXPNAME="trial_region"
+HAMR_command="python hamr.py ${BAM} ${GENOME} ${model} ${OUTDIR} ${EXPNAME}  ${minQ} ${minReadCov} ${seqErr} H4  ${minP} ${minQ} ${minRefPct} --target_bed region.human.bed"
+echo -e "\n\nHAMR (BED-restricted):\n${HAMR_command}"
+${HAMR_command} || echo -e "\n\n***Failed to run:\n${HAMR_command}"
 

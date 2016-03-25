@@ -87,7 +87,7 @@ if (args.paired_ends):
 #Check for output directory and make it if neccessary
 output_folder = re.sub('\/$', '', args.output_folder)
 if  os.path.isdir(args.output_folder): #if no out dir then make one
-    print "existing output folder detected, will overwrite internal files unless program is broken..."
+    print "Existing output folder " + output_folder + " detected, will overwrite all internal files"
 subprocess.check_call(['mkdir', '-p', output_folder])
 
 # make tmp directory if necessary
