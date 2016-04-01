@@ -21,7 +21,7 @@
 
 # get input arguments
 args <- commandArgs(TRUE)
-if (length(args) < 6)
+if (length(args) < 5)
 {
   cat("USAGE: detect_mods.R in_table seq_err hypothesis_type max_p max_fdr\n")
   q()
@@ -57,15 +57,14 @@ for(h in hyps) {
   err.nucs = nucs[!nucs %in% correct.nucs]
   correct.counts = rowSums(data.frame(x[,correct.nucs]))
   err.counts = rowSums(data.frame(x[,err.nucs]))
-  # FIXME: H1: p=1-prob(seq.error) = prob of observing ref. nuc
-  #	            (assuming homozygous reference)
-  #        H4: p=prob(nuc1 | nuc2) (assumes biallelic locus)
   hyp.ps[,h] = pbinom(correct.counts,
                         rowSums(cbind(correct.counts, err.counts)),
                         1-seq.err,
                         lower.tail=T)
 }
 
+# p-value table with two columns corresponding to reference (H1) and
+# H4 results
 hyp.union.ps = array(NA, dim=c(nrow(x), 2))
 colnames(hyp.union.ps) = paste("H", c(1,4), sep='')
 
@@ -100,6 +99,7 @@ if(hypothesis=='H1'){
 
 
 if(hypothesis=='H4'){
+  # add significance [TRUE/FALSE] column
   x$sig = hyp.union.ps[,hypothesis] < maxp &
     hyp.union.ps.adj[,hypothesis] < maxq
 

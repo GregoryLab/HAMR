@@ -1,9 +1,12 @@
 
 HAMR takes in a coordinate-sorted BAM file with mapped reads. Reads should be mapped with m>0 mismatches: patterns of mismatches will be used to detect and predict identity of modifications. HAMR outputs predicted modification sites including identity of the modifications.
 
-NOTE: Only continuous, un-interrupted read alignments will be used.
+NOTE: Spliced alignments (with N in CIGAR string) in BAM will be ignored.
+Alignments with insertion/deletions will be ignored. 
+Only continuous, un-interrupted read alignments will be used.
 Any spliced alignments should be resolved (e.g., by splitting) before
-running HAMR (spliced alignments in BAM (if any) will be ignored). Alignments with insertion/deletions will be ignored. 
+running HAMR, e.g., using GATK
+java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam> -o <input.splitN.bam> -U ALLOW_N_CIGAR_READS
 
 Installing HAMR: 
 HAMR includes pre-compiled binary programs.
