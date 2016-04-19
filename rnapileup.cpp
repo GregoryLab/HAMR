@@ -33,7 +33,7 @@
 //
 //  1.1 - Added support for paired-end reads via the --paried option
 //  	2.2.1 - fixed bug when dealing with reads with length > 127 (can now handle up to 255)
-//  1.2 - Fixed handling of non-continuous (spliced) alignments. Only un-spliced, continuos aligments are used for contructing pileup.
+//  1.2 - Fixed handling of non-continuous (spliced) alignments. Only un-spliced, continuos aligments are used for constructing pileup.
 
 // #define DEBUGMODE
 
@@ -330,8 +330,8 @@ int main(int argc, char **argv) {
 
 
       // skip clipped bases
-      if ( i < nclipstart || i > ((read_len-nclipend)-1) )
-	continue;
+      //if ( i < nclipstart || i > ((read_len-nclipend)-1) )
+      //	continue;
       
       if (i == 0)
 	q_it->pileup += (rev_strand^rev_read && !no_ss) ? "$" : "^~";
