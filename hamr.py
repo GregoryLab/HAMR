@@ -58,7 +58,7 @@ parser.add_argument('seq_err',help='The percentage of mismatches based solely on
 parser.add_argument('hypothesis',help='The hypothesis to be tested, either "H1" or "H4"')
 parser.add_argument('max_p',help='The maximum p-value cutoff')
 parser.add_argument('max_fdr',help='The maximum FDR cutoff')
-parser.add_argument('refpercent',help='The percentage of reads that must match the reference nucleotide')
+parser.add_argument('refproportion',help='The proportion of reads that must match the reference nucleotide (from 0 to 1)')
 parser.add_argument('--target_bed', '-n', action='store', dest='target_bed', nargs='?', default='unspecified', help='Specifies genomic intervals for analysis; e.g. all mRNAs. If unspecified, defaults to whole genome')
 parser.add_argument('--paired_ends','-pe',action='store_true',help='Use this tag to indicate paired-end sequencing')
 parser.add_argument('--filter_ends','-fe',action='store_true',help='Exclude the first and last nucleotides of a read from the analysis')
@@ -83,9 +83,9 @@ mismatchbed2table=hamr_dir+"/"+"mismatchbed2table.sh" #Shell script
 detect_mods_definite=hamr_dir+"/"+"detect_mods.R" #R script
 classify_mods=hamr_dir+"/"+"classify_mods.R" #Rscript
 # ADDED
-coverageBed_depth_histogram = parent_dir+"/"+"coverageBed_depth_histogram.v2.pl" #perl script
-get_chr_lengths_from_bam = parent_dir+"/"+"get_chr_lengths_from_BAM.sh" #Shell script
-plot_mod_type = parent_dir+"/"+"summ_mod_type_fromBed.R" #R script
+coverageBed_depth_histogram = hamr_dir+"/"+"coverageBed_depth_histogram.pl" #perl script
+get_chr_lengths_from_bam = hamr_dir+"/"+"get_chr_lengths_from_BAM.sh" #Shell script
+plot_mod_type = hamr_dir+"/"+"summ_mod_type_fromBed.R" #R script
 # END ADDED
 
 #get flags
@@ -107,9 +107,17 @@ subprocess.check_call(['mkdir', '-p', tmpDIR])
 now = datetime.datetime.now()
 datelist = [str(now.year),str(now.month),str(now.day),str(now.hour),str(now.minute),str(now.second),str(now.microsecond)]
 rightnow= "_".join(datelist)
-rTag=tmpDIR + '/' + rightnow + '.HAMR' #date included in file
-rTag=tmpDIR + '/' + 'HAMR.' + args.out_prefix
+rTag=tmpDIR + '/' + rightnow + '.HAMR.' + args.out_prefix #date included in file
+#rTag=tmpDIR + '/' + 'HAMR.' + args.out_prefix
 
+#check target bed format (i.e. bed6, bed9, or bed12)
+p1=subprocess.Popen(['head', '-n1', args.target_bed],stdout=subprocess.PIPE)
+p2=subprocess.check_output(['awk', '{print NF}'], stdin=p1.stdout)
+p1.stdout.close()
+colnum = int(p2)
+print 'bed'+str(colnum)+' target file detected'
+
+#run HAMR
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
    run_mode = 'targeted'
@@ -130,8 +138,6 @@ if (args.target_bed != 'unspecified'):
         bamForAnalysis=bam_constrained
 
 print "BAM for HAMR analysis: " + bamForAnalysis
-
-
 
 print 'Running RNApileup ' + rnapileup
 rawpileup=rTag+'.pileup.raw'
@@ -175,7 +181,7 @@ txt_output.close()
 #  min ref nuc pct
 #  non-ref/ref > 1%
 final_freq_table=rTag+'.freqtable.final.txt'
-min_ref_pct=args.refpercent
+min_ref_pct=args.refproportion
 outf=open(final_freq_table,'w')
 #subprocess.check_call(['awk','{cov=$5+$6+$7+$8;nonref=$9; ref=cov-nonref; if (ref/cov>=0.05 && nonref/ref>=0.01) print;}', freq_table],stdout=outf)
 subprocess.check_call(['awk','{cov=$5+$6+$7+$8;nonref=$9; ref=cov-nonref; if (ref/cov>='+min_ref_pct+') print;}', freq_table],stdout=outf)
@@ -187,7 +193,7 @@ print "testing for statistical significance..."
 last_tmp_file= final_freq_table #rTag+'.txt'
 raw_file=output_folder+'/'+args.out_prefix+'.raw.txt'
 outfn=open(raw_file,'w')
-subprocess.check_call([RSCRIPT,detect_mods_definite,last_tmp_file,args.seq_err,args.hypothesis,args.max_p,args.max_fdr,args.refpercent],stdout=outfn)
+subprocess.check_call([RSCRIPT,detect_mods_definite,last_tmp_file,args.seq_err,args.hypothesis,args.max_p,args.max_fdr,args.refproportion],stdout=outfn)
 outfn.close()
 
 print "predicting modification identity..."
@@ -227,7 +233,7 @@ if (args.hamr_acc_threshold == 'unspecified'):
     threshold=int(1000000) #arbitarily large number to initiatize threshold
     with open(prediction_file) as infn:
         next(infn) #skip header
-        for file in infn:
+        for line in infn:
             line = line.rstrip().split("\t")
             coverage = (int(line[8])+int(line[9]))
             if coverage < threshold:
@@ -241,9 +247,9 @@ print "tablulating per base read coverage...",
 #generate bed file of all per base coverages, and convert to a histogram-like structure to save space
 cov_hist=output_folder+'/'+args.out_prefix+".cov.hist"
 outfn=open(cov_hist,'w')
-if (args.normalization_bed != 'unspecified'):
+if (args.target_bed != 'unspecified'):
     #run coverageBed
-    ps1 = subprocess.Popen(['coverageBed', '-sorted', '-split', '-s', '-d', '-b', args.bam, '-a', args.normalization_bed], stdout=subprocess.PIPE)
+    ps1 = subprocess.Popen(['coverageBed', '-sorted', '-split', '-s', '-d', '-b', args.bam, '-a', args.target_bed], stdout=subprocess.PIPE)
     subprocess.check_call(['perl', coverageBed_depth_histogram], stdin=ps1.stdout, stdout=outfn)
     ps1.stdout.close()
 else:
@@ -287,15 +293,17 @@ infn.close()
 outfn.close()
 
 #output mods within normalization universe (if -n specified). Else skip this step
-if (args.normalization_bed != 'unspecified'): 
+if (args.target_bed != 'unspecified'): 
     print "Counting modifications in each feature of target bed file..."
-    counts_file=output_folder+'/'+args.out_prefix+"."+args.normalization_prefix+".counts.bed6Plus1"
-    positiveCounts_file=output_folder+'/'+args.out_prefix+"."+args.normalization_prefix+".positiveCounts.txt"
+    counts_file=output_folder+'/'+args.out_prefix+"."+"featureCounts.bedPlus1"
+    positiveCounts_file=output_folder+'/'+args.out_prefix+"."+"positiveFeatureCounts.txt"
     infn=open(counts_file,'w')
-    subprocess.check_call(['intersectBed','-c','-s','-b', bed_file, '-a', args.normalization_bed],stdout=infn)
+    subprocess.check_call(['intersectBed','-c','-s','-b', bed_file, '-a', args.target_bed],stdout=infn)
     infn.close()
     infn=open(positiveCounts_file,'w')
-    subprocess.check_call(['awk', 'BEGIN {OFS="\t";FS="\t"} {if ($10 > 0) print $0}', counts_file],stdout=infn)
+    awk_parameters = 'BEGIN {OFS="\t";FS="\t"} {if ($'+str(colnum+1)+' > 0) print $0}'
+    print awk_parameters
+    subprocess.check_call(['awk', awk_parameters, counts_file],stdout=infn)
     infn.close()    
 else:
     pass
