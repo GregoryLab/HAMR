@@ -1,7 +1,8 @@
 #! /usr/bin/Rscript
-
-library(RColorBrewer)
-library(colorspace)
+suppressPackageStartupMessages({
+	library(RColorBrewer)
+	library(colorspace)
+})
 
 args <- commandArgs(T)
 if (length(args) < 2) {
@@ -44,4 +45,4 @@ barplot(summ, xlab = "Modification Type", beside = TRUE, las = 2, col = "darkblu
 title(ylab = "Count", mgp = c(3, 0.8, 0))
 legend("topright", legend = c("Modification Type"), fill = "darkblue")
 pie(summ, labels=types, radius=1, col=cols)
-dev.off()
+silentOuput = dev.off()
