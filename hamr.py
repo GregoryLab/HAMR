@@ -112,7 +112,6 @@ rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.HAMR.' + args.out_prefix #date included in file
 #rTag=tmpDIR + '/' + 'HAMR.' + args.out_prefix
 
-
 #run HAMR
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
