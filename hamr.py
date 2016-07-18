@@ -112,12 +112,6 @@ rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.HAMR.' + args.out_prefix #date included in file
 #rTag=tmpDIR + '/' + 'HAMR.' + args.out_prefix
 
-#check target bed format (i.e. bed6, bed9, or bed12)
-p1=subprocess.Popen(['head', '-n1', args.target_bed],stdout=subprocess.PIPE)
-p2=subprocess.check_output(['awk', '{print NF}'], stdin=p1.stdout)
-p1.stdout.close()
-colnum = int(p2)
-print 'bed'+str(colnum)+' target file detected'
 
 #run HAMR
 run_mode = "genome-wide"
@@ -127,17 +121,23 @@ inputBAM=args.bam
 print 'Analyzing %s (%s)' %(inputBAM, run_mode)
 bamForAnalysis = inputBAM
 if (args.target_bed != 'unspecified'):
+    #check target bed format (i.e. bed6, bed9, or bed12)
+    p1=subprocess.Popen(['head', '-n1', args.target_bed],stdout=subprocess.PIPE)
+    p2=subprocess.check_output(['awk', '{print NF}'], stdin=p1.stdout)
+    p1.stdout.close()
+    colnum = int(p2)
+    print 'bed'+str(colnum)+' target file detected'
 	# extract alignments for the region(s) of interest
-        target_bed = args.target_bed
-        print 'Target BED is specified: ' + target_bed
-        print 'Restricting BAM to regions in ' + target_bed
-        inputBAMbasename=os.path.basename(inputBAM)
-        bam_constrained = output_folder + '/' + re.sub('\.[^.]+$','.constrained.bam',inputBAMbasename)    
-        fout=open(bam_constrained,'wb')
-        subprocess.check_call([SAMTOOLS,'view','-b',inputBAM,'-L',target_bed],stdout=fout)
-        fout.close()
-        subprocess.check_call([SAMTOOLS,'index',bam_constrained])
-        bamForAnalysis=bam_constrained
+    target_bed = args.target_bed
+    print 'Target BED is specified: ' + target_bed
+    print 'Restricting BAM to regions in ' + target_bed
+    inputBAMbasename=os.path.basename(inputBAM)
+    bam_constrained = output_folder + '/' + re.sub('\.[^.]+$','.constrained.bam',inputBAMbasename)    
+    fout=open(bam_constrained,'wb')
+    subprocess.check_call([SAMTOOLS,'view','-b',inputBAM,'-L',target_bed],stdout=fout)
+    fout.close()
+    subprocess.check_call([SAMTOOLS,'index',bam_constrained])
+    bamForAnalysis=bam_constrained
 
 print "BAM for HAMR analysis: " + bamForAnalysis
 
