@@ -20,6 +20,8 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
+#version 3.0.1
+
 import sys
 
 if sys.hexversion < 0x020700F0:
@@ -225,7 +227,7 @@ outfn.close()
 
 # calculate threshold for HAMR-accessibility unless manually specified
 if (args.hamr_acc_threshold == 'unspecified'):
-    print "calculating threshold of HAMR-accessibility...",
+    print "calculating threshold of HAMR-accessibility..."
     min_cov_file=output_folder+'/'+args.out_prefix+".min_cov.txt"
     outfn=open(min_cov_file,'w')    
     infn=open(prediction_file,'r')
@@ -243,7 +245,7 @@ if (args.hamr_acc_threshold == 'unspecified'):
 else: 
     threshold=int(args.hamr_acc_threshold)
 
-print "tablulating per base read coverage...",
+print "tablulating per base read coverage..."
 #generate bed file of all per base coverages, and convert to a histogram-like structure to save space
 cov_hist=output_folder+'/'+args.out_prefix+".cov.hist"
 outfn=open(cov_hist,'w')
@@ -277,7 +279,7 @@ else:
     os.remove(chrom_lengths_bed)
 outfn.close()
 
-print "calculating number of HAMR-accessible bases...",
+print "calculating number of HAMR-accessible bases..."
 #tablulate number of bases above threshold
 hamr_acc_bases_file=output_folder+'/'+args.out_prefix+".hamr_acc_bases.txt"
 infn=open(cov_hist,'r')
@@ -302,7 +304,6 @@ if (args.target_bed != 'unspecified'):
     infn.close()
     infn=open(positiveCounts_file,'w')
     awk_parameters = 'BEGIN {OFS="\t";FS="\t"} {if ($'+str(colnum+1)+' > 0) print $0}'
-    print awk_parameters
     subprocess.check_call(['awk', awk_parameters, counts_file],stdout=infn)
     infn.close()    
 else:
@@ -316,10 +317,7 @@ if (args.type_plot):
 
 ##END ADDED IN SECTION (7/12/16 LEV)
 
-
-print "Sites analyzed (read depth>=%d): %d" % (threshold, HAMR_accessible_bases) 
-print "Modification sites found: " + str(true_mods) 
-
+#print summary
 mods_per_acc_bases_file=output_folder+'/'+args.out_prefix+".hamr_acc_bases.txt"
 outfn=open(mods_per_acc_bases_file,'w')
 mods_per_acc_bases = float(true_mods)/float(HAMR_accessible_bases)*1000000
@@ -328,8 +326,10 @@ outfn.write(args.out_prefix+'\t'+str(true_mods)+'\t'+str(HAMR_accessible_bases)+
 outfn.close()
 
 #conclusion message
-print "HAMR analysis complete\n\n------------------------------\n"
 # final_freq_table contains sites with ref / non-ref nucleotide mixtures
+print "HAMR analysis complete\n\n------------------------------\n"
+print "Sites analyzed (read depth>=%d): %d" % (threshold, HAMR_accessible_bases) 
+print "Modification sites found: " + str(true_mods) 
 print "Sites used for analysis: %s" % final_freq_table
 print "Statistical testing results: %s" % raw_file
 print "Modification sites + predicted types saved to: %s" % prediction_file
