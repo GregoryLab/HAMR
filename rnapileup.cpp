@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
       
       if (i == 0)
 	q_it->pileup += (rev_strand^rev_read && !no_ss) ? "$" : "^~";
-      if (i == ((read_len-nclipend) - 1))
+      else if (i == ((read_len-nclipend) - 1))
 	q_it->pileup += (rev_strand^rev_read && !no_ss) ? "^~" : "$";
 
       // make sure we don't go past end of ref seq
