@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.1 (Pavel's updates to tabulation of HAMR accessible bases - all bases over min_cov are HAMR accessible. This assumption fits with runs of HAMR down to coverage of 10)
+#version 3.1.1 - Removing option to manually specify HAMR accessible threshold (this is essentially set by min_cov)
 
 import sys
 
@@ -70,7 +70,6 @@ parser.add_argument('--target_bed', '-n', action='store', dest='target_bed', nar
 parser.add_argument('--paired_ends','-pe',action='store_true',help='Use this tag to indicate paired-end sequencing')
 parser.add_argument('--filter_ends','-fe',action='store_true',help='Exclude the first and last nucleotides of a read from the analysis')
 parser.add_argument('--empirical_hamr_acc_threshold','-et',action='store_true',help='Calculate the treshold of HAMR accessibility empirically. Otherwise, assumes it is equal to min_cov (reasonable assumption at 10x or more')
-parser.add_argument('--hamr_acc_threshold','-t',action='store', dest='hamr_acc_threshold', nargs='?', default='unspecified', help='(Integer) Manually specify the threshold for HAMR accessibility, IFF --empirical_hamr_acc_threshold')
 parser.add_argument('--type_plot','-tp',action='store_true',help='Use this tag to include plots of predicted modification type')
 
 args=parser.parse_args()
@@ -79,7 +78,7 @@ args=parser.parse_args()
 #Raise error if hypothesis has invalid value
 if args.hypothesis != 'H1' and args.hypothesis != 'H4':
     raise ValueError('Hypothesis must be H1 or H4.')
- 
+
 #locations of C, Bash, and R scripts
 hamr_dir=os.path.dirname(os.path.realpath(sys.argv[0]))
 rnapileup=hamr_dir+"/"+"rnapileup" #C-script
@@ -229,18 +228,15 @@ if not args.empirical_hamr_acc_threshold:
 
 else:
     # calculate threshold for HAMR-accessibility unless manually specified
-    if (args.hamr_acc_threshold == 'unspecified'):
-        print "calculating threshold of HAMR-accessibility..."
-        min_cov_file=output_folder+'/'+args.out_prefix+".min_cov.txt"
-        outfn=open(min_cov_file,'w')    
-        threshold=subprocess.check_output(
-             ['awk','{if (NR==1) next; cov=$9+$10; if (NR==2) thres=cov; if (cov < thres) thres=cov; }END{ print thres+0;}', prediction_file])
-        threshold=int(threshold)
-        print "HAMR accessibility threshold="+str(threshold)
-        outfn.write(args.out_prefix+'\t'+str(threshold)+'\n')
-        outfn.close()
-    else: 
-        threshold=int(args.hamr_acc_threshold)
+    print "calculating threshold of HAMR-accessibility..."
+    min_cov_file=output_folder+'/'+args.out_prefix+".min_cov.txt"
+    outfn=open(min_cov_file,'w')    
+    threshold=subprocess.check_output(
+         ['awk','{if (NR==1) next; cov=$9+$10; if (NR==2) thres=cov; if (cov < thres) thres=cov; }END{ print thres+0;}', prediction_file])
+    threshold=int(threshold)
+    print "HAMR accessibility threshold="+str(threshold)
+    outfn.write(args.out_prefix+'\t'+str(threshold)+'\n')
+    outfn.close()
 
     # tablulate number of bases at or above threshold
     print "calculating number of HAMR-accessible bases...",
