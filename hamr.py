@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 #
-#  Copyright (c) 2013 University of Pennsylvania
+#  Copyright (c) 2013-2016 University of Pennsylvania
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.0.1
+#version 3.1 (Pavel's updates to tabulation of HAMR accessible bases - all bases over min_cov are HAMR accessible. This assumption fits with runs of HAMR down to coverage of 10)
 
 import sys
 
@@ -47,6 +47,11 @@ if SAMTOOLS is None:
    print  "***ERROR: samtools is not found"
    sys.exit("Please install samtools or make sure it is in the PATH")
 
+BEDTOOLS=spawn.find_executable("bedtools")
+if BEDTOOLS is None:
+   print  "***ERROR: coverageBed is not found"
+   sys.exit("Please install bedtools 2.2x or make sure it is in the PATH")
+
 # command line arguments
 parser = argparse.ArgumentParser(description="Takes a bam file that has been sorted with redundant reads removed and generates a HAMR predicted_mods.txt output")
 parser.add_argument('bam',help='A sorted bam file consisting of nonredundant reads')
@@ -64,10 +69,9 @@ parser.add_argument('refproportion',help='The proportion of reads that must matc
 parser.add_argument('--target_bed', '-n', action='store', dest='target_bed', nargs='?', default='unspecified', help='Specifies genomic intervals for analysis; e.g. all mRNAs. If unspecified, defaults to whole genome')
 parser.add_argument('--paired_ends','-pe',action='store_true',help='Use this tag to indicate paired-end sequencing')
 parser.add_argument('--filter_ends','-fe',action='store_true',help='Exclude the first and last nucleotides of a read from the analysis')
-# ADDED
-parser.add_argument('--hamr_acc_threshold','-t',action='store', dest='hamr_acc_threshold', nargs='?', default='unspecified', help='(Integer) Manually specify the threshold for HAMR accessibility')
+parser.add_argument('--empirical_hamr_acc_threshold','-et',action='store_true',help='Calculate the treshold of HAMR accessibility empirically. Otherwise, assumes it is equal to min_cov (reasonable assumption at 10x or more')
+parser.add_argument('--hamr_acc_threshold','-t',action='store', dest='hamr_acc_threshold', nargs='?', default='unspecified', help='(Integer) Manually specify the threshold for HAMR accessibility, IFF --empirical_hamr_acc_threshold')
 parser.add_argument('--type_plot','-tp',action='store_true',help='Use this tag to include plots of predicted modification type')
-# END ADDED
 
 args=parser.parse_args()
 
@@ -84,11 +88,9 @@ rnapileup2mismatchbed=hamr_dir+"/"+"rnapileup2mismatchbed" #C-script
 mismatchbed2table=hamr_dir+"/"+"mismatchbed2table.sh" #Shell script
 detect_mods_definite=hamr_dir+"/"+"detect_mods.R" #R script
 classify_mods=hamr_dir+"/"+"classify_mods.R" #Rscript
-# ADDED
 coverageBed_depth_histogram = hamr_dir+"/"+"coverageBed_depth_histogram.pl" #perl script
 get_chr_lengths_from_bam = hamr_dir+"/"+"get_chr_lengths_from_BAM.sh" #Shell script
 plot_mod_type = hamr_dir+"/"+"summ_mod_type_fromBed.R" #R script
-# END ADDED
 
 #get flags
 pairedends=""
@@ -112,31 +114,36 @@ rightnow= "_".join(datelist)
 rTag=tmpDIR + '/' + rightnow + '.HAMR.' + args.out_prefix #date included in file
 #rTag=tmpDIR + '/' + 'HAMR.' + args.out_prefix
 
-#run HAMR
+###################################################################################################################################
+
+##run HAMR
 run_mode = "genome-wide"
 if (args.target_bed != 'unspecified'):
    run_mode = 'targeted'
+
+
 inputBAM=args.bam
 print 'Analyzing %s (%s)' %(inputBAM, run_mode)
 bamForAnalysis = inputBAM
 if (args.target_bed != 'unspecified'):
-    #check target bed format (i.e. bed6, bed9, or bed12)
-    p1=subprocess.Popen(['head', '-n1', args.target_bed],stdout=subprocess.PIPE)
-    p2=subprocess.check_output(['awk', '{print NF}'], stdin=p1.stdout)
-    p1.stdout.close()
-    colnum = int(p2)
-    print 'bed'+str(colnum)+' target file detected'
 	# extract alignments for the region(s) of interest
-    target_bed = args.target_bed
-    print 'Target BED is specified: ' + target_bed
-    print 'Restricting BAM to regions in ' + target_bed
-    inputBAMbasename=os.path.basename(inputBAM)
-    bam_constrained = output_folder + '/' + re.sub('\.[^.]+$','.constrained.bam',inputBAMbasename)    
-    fout=open(bam_constrained,'wb')
-    subprocess.check_call([SAMTOOLS,'view','-b',inputBAM,'-L',target_bed],stdout=fout)
-    fout.close()
-    subprocess.check_call([SAMTOOLS,'index',bam_constrained])
-    bamForAnalysis=bam_constrained
+        target_bed = args.target_bed
+        print 'Target BED is specified: ' + target_bed
+
+        #check target bed format (i.e. bed6, bed9, or bed12)
+        target_bed_colnum = subprocess.check_output(
+                              ['awk', '{print NF; exit}',target_bed] )
+        target_bed_colnum = int(target_bed_colnum)
+        print 'bed'+str(target_bed_colnum)+' target file detected'
+
+        print 'Restricting BAM to regions in ' + target_bed
+        inputBAMbasename=os.path.basename(inputBAM)
+        bam_constrained = output_folder + '/' + re.sub('\.[^.]+$','.constrained.bam',inputBAMbasename)    
+        fout=open(bam_constrained,'wb')
+        subprocess.check_call([SAMTOOLS,'view','-b',inputBAM,'-L',target_bed],stdout=fout)
+        fout.close()
+        subprocess.check_call([SAMTOOLS,'index',bam_constrained])
+        bamForAnalysis=bam_constrained
 
 print "BAM for HAMR analysis: " + bamForAnalysis
 
@@ -153,14 +160,12 @@ subprocess.check_call([filter_pileup,rawpileup,str(args.min_qual),str(int(args.f
 ffilteredpileup.close()
 
 print ("Filter coverage...")
-## this will output ALL sites with read depth >= min_cov!!
+## this will output ALL sites with read depth >= min_cov
 ## this will be the total # of sites for HAMR analysis
 filteredpileupcov=rTag+'.pileup.filtered.'+str(args.min_cov)
 ffilteredpileupcov=open(filteredpileupcov,'w')
 subprocess.check_call(['awk','$4>=' + str(args.min_cov),filteredpileup],stdout=ffilteredpileupcov) 
 ffilteredpileupcov.close()
-
-
 
 print 'Running rnapileup2mismatchbed...'
 # convert pileups into BED file with entry corresponding to the observed (ref nuc) --> (read nucleotide) transitions
@@ -169,7 +174,7 @@ fmismatchbed=open(mismatchbed,'w')
 subprocess.check_call([rnapileup2mismatchbed,filteredpileupcov],stdout=fmismatchbed)
 fmismatchbed.close()
 
-print "converting mismatch BED to nucleotide frequency table"
+print "converting mismatch BED to nucleotide frequency table..."
 # mismatchbed2table outputs all sites with at least 1 non-ref nuc
 final_bed_file=mismatchbed
 freq_table=rTag+'.freqtable.txt'
@@ -177,14 +182,10 @@ txt_output=open(freq_table,'w')
 subprocess.check_call([mismatchbed2table, final_bed_file],stdout=txt_output)
 txt_output.close()
 
-#print "filtering out sites based on non-ref/ref proportions"
-# filter by:
-#  min ref nuc pct
-#  non-ref/ref > 1%
+print "filtering out sites based on non-ref/ref proportions..."
 final_freq_table=rTag+'.freqtable.final.txt'
 min_ref_pct=args.refproportion
 outf=open(final_freq_table,'w')
-#subprocess.check_call(['awk','{cov=$5+$6+$7+$8;nonref=$9; ref=cov-nonref; if (ref/cov>=0.05 && nonref/ref>=0.01) print;}', freq_table],stdout=outf)
 subprocess.check_call(['awk','{cov=$5+$6+$7+$8;nonref=$9; ref=cov-nonref; if (ref/cov>='+min_ref_pct+') print;}', freq_table],stdout=outf)
 outf.close()
 
@@ -214,84 +215,43 @@ outfn=open(bed_file,'w')
 subprocess.check_call(['awk', 'FNR > 1 {print $1"\t"$2"\t"(1+$2)"\t"$1";"$2"\t"$16"\t"$3}', prediction_file],stdout=outfn)
 outfn.close()
 
-# threshold = int(args.min_cov) 
-#Min cov argument is just to speed HAMR up by ignoring extremely low coverage bases. "HAMR accessible" bases are defined empirically by the minumimum coverage observed at any modified base. This threshold is distinct from the bases analyzed by hamr, as set by min_cov, sorry for the confusion
-#print "calculating number of HAMR-accessible bases..."
-# this is readily available from the filtered by min_cov pileup file
-#filt_pileup_file=filteredpileupcov
-#retOut=subprocess.check_output(['awk', 'END{print NR}',filt_pileup_file])
-#HAMR_accessible_bases = int(retOut) 
-
-##BEGIN ADDED IN SECTION (7/12/16 LEV)
-
-# calculate threshold for HAMR-accessibility unless manually specified
-if (args.hamr_acc_threshold == 'unspecified'):
-    print "calculating threshold of HAMR-accessibility..."
-    min_cov_file=output_folder+'/'+args.out_prefix+".min_cov.txt"
-    outfn=open(min_cov_file,'w')    
-    infn=open(prediction_file,'r')
-    i=0
-    threshold=int(1000000) #arbitarily large number to initiatize threshold
-    with open(prediction_file) as infn:
-        next(infn) #skip header
-        for line in infn:
-            line = line.rstrip().split("\t")
-            coverage = (int(line[8])+int(line[9]))
-            if coverage < threshold:
-                threshold = int(coverage)
-    outfn.write(args.out_prefix+'\t'+str(threshold)+'\n')
-    outfn.close()
-else: 
-    threshold=int(args.hamr_acc_threshold)
-
-print "tablulating per base read coverage..."
-#generate bed file of all per base coverages, and convert to a histogram-like structure to save space
-cov_hist=output_folder+'/'+args.out_prefix+".cov.hist"
-outfn=open(cov_hist,'w')
-if (args.target_bed != 'unspecified'):
-    #run coverageBed
-    ps1 = subprocess.Popen(['coverageBed', '-sorted', '-split', '-s', '-d', '-b', args.bam, '-a', args.target_bed], stdout=subprocess.PIPE)
-    subprocess.check_call(['perl', coverageBed_depth_histogram], stdin=ps1.stdout, stdout=outfn)
-    ps1.stdout.close()
-else:
-    #create chromosome lengths file (like that used in genomeCoverageBed)
-    chrom_lengths=output_folder+'/'+args.out_prefix+".chr_lengths.txt"
-    chrom_lengths_fn=open(chrom_lengths,'w')
-    subprocess.check_call(['bash', get_chr_lengths_from_bam, args.bam], stdout=chrom_lengths_fn)
-    chrom_lengths_fn.close()
-    #create whole chrosome intervals for running coverageBed (two per chrosome - plus and minus strand)
-    chrom_lengths_bed=output_folder+'/'+args.out_prefix+".chr_lengths.bed"
-    chrom_lengths_fn=open(chrom_lengths,'r')
-    chrom_lengths_bed_fn=open(chrom_lengths_bed,'w')
-    for i in chrom_lengths_fn:
-        line = i.rstrip().split("\t")
-        length = int(line[1])
-        plus = line[0]+'\t'+"0"+'\t'+line[1]+'\t'+'.'+'\t'+'.'+'\t'+'+'+'\n' 
-        minus = line[0]+'\t'+"0"+'\t'+line[1]+'\t'+'.'+'\t'+'.'+'\t'+'-'+'\n'
-        chrom_lengths_bed_fn.write(plus+minus)
-    chrom_lengths_bed_fn.close()
-    #run coverageBed
-    ps1 = subprocess.Popen(['coverageBed', '-sorted', '-split', '-s', '-d', '-b', args.bam, '-a', chrom_lengths_bed], stdout=subprocess.PIPE)
-    subprocess.check_call(['perl', coverageBed_depth_histogram], stdin=ps1.stdout, stdout=outfn)
-    ps1.stdout.close()
-    os.remove(chrom_lengths)
-    os.remove(chrom_lengths_bed)
-outfn.close()
 
 print "calculating number of HAMR-accessible bases..."
-#tablulate number of bases above threshold
-hamr_acc_bases_file=output_folder+'/'+args.out_prefix+".hamr_acc_bases.txt"
-infn=open(cov_hist,'r')
-outfn=open(hamr_acc_bases_file,'w')
-HAMR_accessible_bases=0
-for i in infn:
-    line = i.rstrip().split("\t")
-    if (int(line[0])>=threshold):
-        HAMR_accessible_bases=HAMR_accessible_bases+int(line[1])
-HAMR_accessible_bases=int(HAMR_accessible_bases)
-outfn.write(args.out_prefix+'\t'+str(HAMR_accessible_bases)+'\n')
-infn.close()
-outfn.close()
+
+if not args.empirical_hamr_acc_threshold:
+    # tablulate number of bases at or above min_cov
+    threshold = int(args.min_cov)
+    filt_pileup_file=filteredpileupcov
+    retOut=subprocess.check_output(['awk', 'END{print NR}',filt_pileup_file])
+    HAMR_accessible_bases=int(retOut)
+    #num_bases_with_min_cov=int(retOut) 
+    #HAMR_accessible_bases=int(num_bases_with_min_cov)
+
+else:
+    # calculate threshold for HAMR-accessibility unless manually specified
+    if (args.hamr_acc_threshold == 'unspecified'):
+        print "calculating threshold of HAMR-accessibility..."
+        min_cov_file=output_folder+'/'+args.out_prefix+".min_cov.txt"
+        outfn=open(min_cov_file,'w')    
+        threshold=subprocess.check_output(
+             ['awk','{if (NR==1) next; cov=$9+$10; if (NR==2) thres=cov; if (cov < thres) thres=cov; }END{ print thres+0;}', prediction_file])
+        threshold=int(threshold)
+        print "HAMR accessibility threshold="+str(threshold)
+        outfn.write(args.out_prefix+'\t'+str(threshold)+'\n')
+        outfn.close()
+    else: 
+        threshold=int(args.hamr_acc_threshold)
+
+    # tablulate number of bases at or above threshold
+    print "calculating number of HAMR-accessible bases...",
+    hamr_acc_bases_file=output_folder+'/'+args.out_prefix+".hamr_acc_bases.txt"
+    outfn=open(hamr_acc_bases_file,'w')
+    HAMR_accessible_bases=subprocess.check_output(
+            ['awk', '{if ($4>='+str(threshold)+') ++a}END{print a}', filteredpileup])
+    HAMR_accessible_bases=int(HAMR_accessible_bases);
+    outfn.write(args.out_prefix+'\t'+str(HAMR_accessible_bases)+'\n')
+    outfn.close()
+    print "HAMR accessible bases="+str(HAMR_accessible_bases)
 
 #output mods within normalization universe (if -n specified). Else skip this step
 if (args.target_bed != 'unspecified'): 
@@ -299,10 +259,10 @@ if (args.target_bed != 'unspecified'):
     counts_file=output_folder+'/'+args.out_prefix+"."+"featureCounts.bedPlus1"
     positiveCounts_file=output_folder+'/'+args.out_prefix+"."+"positiveFeatureCounts.txt"
     infn=open(counts_file,'w')
-    subprocess.check_call(['intersectBed','-c','-s','-b', bed_file, '-a', args.target_bed],stdout=infn)
+    subprocess.check_call([BEDTOOLS,'intersect','-c','-s','-b', bed_file, '-a', args.target_bed],stdout=infn)
     infn.close()
     infn=open(positiveCounts_file,'w')
-    awk_parameters = 'BEGIN {OFS="\t";FS="\t"} {if ($'+str(colnum+1)+' > 0) print $0}'
+    awk_parameters = 'BEGIN {OFS="\t";FS="\t"} {if ($'+str(target_bed_colnum+1)+' > 0) print $0}'
     subprocess.check_call(['awk', awk_parameters, counts_file],stdout=infn)
     infn.close()    
 else:
@@ -314,9 +274,7 @@ if (args.type_plot):
     plot_file = output_folder+'/'+args.out_prefix+".mod_type.pdf"
     subprocess.check_call(['Rscript', plot_mod_type, bed_file, plot_file])
 
-##END ADDED IN SECTION (7/12/16 LEV)
-
-#print summary
+#print summary file
 mods_per_acc_bases_file=output_folder+'/'+args.out_prefix+".hamr_acc_bases.txt"
 outfn=open(mods_per_acc_bases_file,'w')
 mods_per_acc_bases = float(true_mods)/float(HAMR_accessible_bases)*1000000
@@ -325,10 +283,10 @@ outfn.write(args.out_prefix+'\t'+str(true_mods)+'\t'+str(HAMR_accessible_bases)+
 outfn.close()
 
 #conclusion message
-# final_freq_table contains sites with ref / non-ref nucleotide mixtures
 print "HAMR analysis complete\n\n------------------------------\n"
-print "Sites analyzed (read depth>=%d): %d" % (threshold, HAMR_accessible_bases) 
+print "HAMR accessible sites analyzed (read depth>=%d): %d" % (threshold, HAMR_accessible_bases) 
 print "Modification sites found: " + str(true_mods) 
+# final_freq_table contains sites with ref / non-ref nucleotide mixtures
 print "Sites used for analysis: %s" % final_freq_table
 print "Statistical testing results: %s" % raw_file
 print "Modification sites + predicted types saved to: %s" % prediction_file
