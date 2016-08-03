@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.1.1 - Removing option to manually specify HAMR accessible threshold (this is essentially set by min_cov)
+#version 3.1.2 - Bug fix to print "predicting modification identity..." truemods linecount - now works when no modifications are found
 
 import sys
 
@@ -191,15 +191,18 @@ outf.close()
 #OUTPUT steps
 
 print "testing for statistical significance..."
-last_tmp_file= final_freq_table #rTag+'.txt'
+last_tmp_file= final_freq_table
 raw_file=output_folder+'/'+args.out_prefix+'.raw.txt'
 outfn=open(raw_file,'w')
 subprocess.check_call([RSCRIPT,detect_mods_definite,last_tmp_file,args.seq_err,args.hypothesis,args.max_p,args.max_fdr,args.refproportion],stdout=outfn)
 outfn.close()
 
 print "predicting modification identity..."
-retOut=subprocess.check_output(['grep', '-c','TRUE',raw_file])
-true_mods = int(retOut)
+retOut=subprocess.Popen(['grep', '-c','TRUE',raw_file]).communicate()[0]
+if retOut is None:
+    true_mods = int(0)
+else:
+    true_mods = int(retOut)
 prediction_file=output_folder+'/'+args.out_prefix+'.mods.txt'
 if (true_mods > 0):
     outfn=open(prediction_file,'w')
