@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.1.2 - Bug fix to print "predicting modification identity..." truemods linecount - now works when no modifications are found
+#version 3.2 - Now prints out number of HAMR accessible bases even when no modifications are found
 
 import sys
 
@@ -209,7 +209,19 @@ if (true_mods > 0):
     subprocess.check_call([RSCRIPT,classify_mods,raw_file,args.prediction_training_set],stdout=outfn)
     outfn.close()
 else:
-	sys.exit("No HAMR modifications predicted, output will contain raw table only\nHAMR analysis complete\n\n------------------------------\n")
+    #tabulate number of HAMR accessible bases and then exit
+    threshold = int(args.min_cov)
+    filt_pileup_file=filteredpileupcov
+    retOut=subprocess.check_output(['awk', 'END{print NR}',filt_pileup_file])
+    HAMR_accessible_bases=int(retOut)
+    #print summary file
+    mods_per_acc_bases_file=output_folder+'/'+args.out_prefix+".hamr_acc_bases.txt"
+    outfn=open(mods_per_acc_bases_file,'w')
+    mods_per_acc_bases = 0
+    outfn.write('sample\tmods\thamr_accessible_bases\tmods_per_million_accessible_bases\n')
+    outfn.write(args.out_prefix+'\t'+str(true_mods)+'\t'+str(HAMR_accessible_bases)+'\t'+str(mods_per_acc_bases)+'\n')
+    outfn.close()
+    sys.exit("No HAMR modifications predicted, output will contain raw table and number of HAMR accessible bases only\nAssuming min_cov of %s as threshold for HAMR accessibility\nHAMR analysis complete\n\n------------------------------\n" % args.min_cov)
 
 print "converting output to bed format..."
 bed_file=output_folder+'/'+args.out_prefix+".mods.bed"
