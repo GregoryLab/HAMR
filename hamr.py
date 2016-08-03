@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.2 - Now prints out number of HAMR accessible bases even when no modifications are found
+#version 3.2.1 - Bug fix to predicting modification identity... section
 
 import sys
 
@@ -198,11 +198,16 @@ subprocess.check_call([RSCRIPT,detect_mods_definite,last_tmp_file,args.seq_err,a
 outfn.close()
 
 print "predicting modification identity..."
-retOut=subprocess.Popen(['grep', '-c','TRUE',raw_file]).communicate()[0]
-if retOut is None:
-    true_mods = int(0)
-else:
-    true_mods = int(retOut)
+#retOut=subprocess.check_output(['grep', '-c','TRUE',raw_file])
+# if retOut is None:
+#     true_mods = int(0)
+# else:
+#     true_mods = int(retOut)
+ps1 = subprocess.Popen(('grep', 'TRUE', raw_file), stdout=subprocess.PIPE)
+true_mods = subprocess.Popen(('wc', '-l'), stdin=ps1.stdout, stdout=subprocess.PIPE).communicate()[0].rstrip()
+ps1.stdout.close()
+true_mods=int(true_mods)
+print true_mods
 prediction_file=output_folder+'/'+args.out_prefix+'.mods.txt'
 if (true_mods > 0):
     outfn=open(prediction_file,'w')
