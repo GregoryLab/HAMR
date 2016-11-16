@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.2.1 - Bug fix to predicting modification identity... section
+#version 3.3 - Adding in function to summarize mismatches from the beggining and end read termini (summarizeEndMismatches.py), and requiring manually specifying retention of intermediate files
 
 import sys
 
@@ -31,6 +31,7 @@ if sys.hexversion < 0x020700F0:
 import argparse
 import subprocess
 import os
+import shutil
 import datetime
 import time
 import re
@@ -40,7 +41,13 @@ from distutils import spawn
 RSCRIPT=spawn.find_executable("Rscript")
 if RSCRIPT is None:
    print "***ERROR: Rscript is not found"
-   sys.exit("Please instal R / Rscript or make sure it is in the PATH")
+   sys.exit("Please install R / Rscript or make sure it is in the PATH")
+
+PYTHON=spawn.find_executable("python")
+if PYTHON is None:
+   print "***ERROR: python is not found"
+   sys.exit("Please install / python or make sure it is in the PATH")
+
 
 SAMTOOLS=spawn.find_executable("samtools")
 if SAMTOOLS is None:
@@ -71,6 +78,7 @@ parser.add_argument('--paired_ends','-pe',action='store_true',help='Use this tag
 parser.add_argument('--filter_ends','-fe',action='store_true',help='Exclude the first and last nucleotides of a read from the analysis')
 parser.add_argument('--empirical_hamr_acc_threshold','-et',action='store_true',help='Calculate the treshold of HAMR accessibility empirically. Otherwise, assumes it is equal to min_cov (reasonable assumption at 10x or more')
 parser.add_argument('--type_plot','-tp',action='store_true',help='Use this tag to include plots of predicted modification type')
+parser.add_argument('--retain_tempfiles','-r',action='store_true',help='Use this tag to keep HAMR temp files')
 
 args=parser.parse_args()
 
@@ -90,6 +98,7 @@ classify_mods=hamr_dir+"/"+"classify_mods.R" #Rscript
 coverageBed_depth_histogram = hamr_dir+"/"+"coverageBed_depth_histogram.pl" #perl script
 get_chr_lengths_from_bam = hamr_dir+"/"+"get_chr_lengths_from_BAM.sh" #Shell script
 plot_mod_type = hamr_dir+"/"+"summ_mod_type_fromBed.R" #R script
+summarizeEndMismatches = hamr_dir+"/"+"summarizeEndMismatches.py" #python script
 
 #get flags
 pairedends=""
@@ -166,6 +175,12 @@ ffilteredpileupcov=open(filteredpileupcov,'w')
 subprocess.check_call(['awk','$4>=' + str(args.min_cov),filteredpileup],stdout=ffilteredpileupcov) 
 ffilteredpileupcov.close()
 
+print ("Tabulating terminal mismatch frequency...")
+endMismatches=output_folder+'/'+args.out_prefix+'.endMismatches.txt'
+fendMismatches=open(endMismatches,'w')
+subprocess.check_call([PYTHON,summarizeEndMismatches,filteredpileupcov],stdout=fendMismatches) 
+fendMismatches.close()
+
 print 'Running rnapileup2mismatchbed...'
 # convert pileups into BED file with entry corresponding to the observed (ref nuc) --> (read nucleotide) transitions
 mismatchbed=rTag+'.mismatch.bed'
@@ -178,7 +193,7 @@ print "converting mismatch BED to nucleotide frequency table..."
 final_bed_file=mismatchbed
 freq_table=rTag+'.freqtable.txt'
 txt_output=open(freq_table,'w')
-subprocess.check_call([mismatchbed2table, final_bed_file],stdout=txt_output)
+subprocess.check_call([mismatchbed2table,final_bed_file],stdout=txt_output)
 txt_output.close()
 
 print "filtering out sites based on non-ref/ref proportions..."
@@ -198,11 +213,6 @@ subprocess.check_call([RSCRIPT,detect_mods_definite,last_tmp_file,args.seq_err,a
 outfn.close()
 
 print "predicting modification identity..."
-#retOut=subprocess.check_output(['grep', '-c','TRUE',raw_file])
-# if retOut is None:
-#     true_mods = int(0)
-# else:
-#     true_mods = int(retOut)
 ps1 = subprocess.Popen(('grep', 'TRUE', raw_file), stdout=subprocess.PIPE)
 true_mods = subprocess.Popen(('wc', '-l'), stdin=ps1.stdout, stdout=subprocess.PIPE).communicate()[0].rstrip()
 ps1.stdout.close()
@@ -307,3 +317,6 @@ print "Sites used for analysis: %s" % final_freq_table
 print "Statistical testing results: %s" % raw_file
 print "Modification sites + predicted types saved to: %s" % prediction_file
 
+#remove temp files
+if not args.retain_tempfiles:
+    shutil.rmtree(tmpDIR)
