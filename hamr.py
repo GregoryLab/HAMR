@@ -20,7 +20,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
-#version 3.3 - Adding in function to summarize mismatches from the beggining and end read termini (summarizeEndMismatches.py), and requiring manually specifying retention of intermediate files
+#version 3.3 - Adding in function to summarize mismatches from the beginning and end read termini (summarizeEndMismatches.py), and requiring manually specifying retention of intermediate files
 
 import sys
 
