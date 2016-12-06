@@ -301,14 +301,14 @@ int main(int argc, char **argv) {
 
     bool rev_strand = bam1_strand(bam);
     bool rev_read = false;
-//Not quite sure why this was here
-/*
+
+
     if(pair_ends){
-    	if(bam->core.flag & 0x10 ){
+    	if(bam->core.flag & 0x80 ){
 		rev_read = true;		
 	}
     }
-*/ 
+ 
     deque<Pileup>::iterator q_it( q.begin() );
     for(int i=0; i < (read_len-nclipend); ++i, ++q_it) {
       int g(read_pos + i);  // genomic position
@@ -350,7 +350,7 @@ int main(int argc, char **argv) {
             q_it->strand = '-';
       char read_nuc = read_seq[i];
       char ref_nuc = ref_seq[g];
-      if(rev_read){
+      if(rev_read^rev_strand){
      	read_nuc = DNAComplementer()(read_nuc);
 	ref_nuc = DNAComplementer()(ref_nuc);
       } 
