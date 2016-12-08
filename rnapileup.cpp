@@ -357,8 +357,9 @@ int main(int argc, char **argv) {
       char read_nuc = read_seq[i];
       char ref_nuc = ref_seq[g];
       if(rev_read^rev_strand){
-     	read_nuc = DNAComplementer()(read_nuc);
-	ref_nuc = DNAComplementer()(ref_nuc);
+     //	
+     	//read_nuc = DNAComplementer()(read_nuc);
+	//ref_nuc = DNAComplementer()(ref_nuc);
       } 
       if (ref_seq[g] == read_seq[i])
 	q_it->pileup += (rev_strand^rev_read && !no_ss) ? ',' : '.';
