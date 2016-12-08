@@ -302,10 +302,16 @@ int main(int argc, char **argv) {
     bool rev_strand = bam1_strand(bam);
     bool rev_read = false;
 
-
+   char true_strand_tag[2] = {'X', 'S'};
     if(pair_ends){
-    	if(bam->core.flag & 0x80 ){
-		rev_read = true;		
+	unsigned char* tagptr = NULL;
+	tagptr = bam_aux_get(bam, true_strand_tag);
+    	if(tagptr != NULL){
+		rev_strand = tagptr[1] == '-';
+			
+		
+	}else{
+		cerr<<"Could not find true strand tag. This didn't work\n";
 	}
     }
  
