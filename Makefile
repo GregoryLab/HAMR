@@ -1,4 +1,4 @@
-SAMTOOLS_DIR=samtools
+SAMTOOLS_DIR=/usr/local/bin
 LIBBAM=bam
 osname := $(shell uname -s 2>/dev/null || echo "NA")
 ifeq ($(osname),Darwin)

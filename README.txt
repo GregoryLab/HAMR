@@ -10,9 +10,14 @@ java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam>
 
 Installing HAMR: 
 HAMR includes pre-compiled binary programs.
-If neccessary, to re-compile use
-make clean
-make
+
+If neccessary, to re-compile and Samtools library is installed in the default location use:
+	make clean
+	make
+if Samtools is installed elsewhere use:
+	make clean
+	make SAMTOOLS_DIR=[location where samtools library is installed]
+
 
 Operating instructions:
 
@@ -56,7 +61,6 @@ will be filtered out.
 		the minimum percentage of reads that must match the reference nucleotide. All sites with reference read nucleotide proportion < <refpercent> will be filtered out
 	<output_dir>
 		directory for the HAMR output
-         
         <output_prefix>
 		prefix for HAMR output files
  
@@ -68,7 +72,10 @@ OPTIONS:
 		indicates paired-end sequencing was used 
 	--filter_ends,-fe
 		excludes the first and last positions in the read from the analysis
-
+	--empirical_hamr_acc_threshold, -et
+		Calculate the threshold of HAMR accessiblity empiracally. If not used, HARM assumes accessibility is equal to min_cov (reasonable assumption at 10x or more)
+	--retain_tempfiles, -r
+		Do not delete files generated in intermediate steps. Useful for debugging
 
 
 Copyright:
