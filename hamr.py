@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 #
-#  Copyright (c) 2013-2016 University of Pennsylvania
+#  Copyright (c) 2013-2018 University of Pennsylvania
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
