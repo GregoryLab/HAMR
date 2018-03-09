@@ -1,44 +1,62 @@
+# High Throughput Annotation of Modified Ribonucleotides
+
 
 HAMR takes in a coordinate-sorted BAM file with mapped reads. Reads should be mapped with m>0 mismatches: patterns of mismatches will be used to detect and predict identity of modifications. HAMR outputs predicted modification sites including identity of the modifications.
 
-NOTE: Spliced alignments (with N in CIGAR string) in BAM will be ignored.
+## Installing HAMR
+
+HAMR includes pre-compiled binary programs.
+If neccessary, to re-compile use
+
+```
+make clean
+```
+
+```
+make
+```
+
+## Preparing Mapped Reads for HAMR
+Spliced alignments (with N in CIGAR string) in BAM files will be ignored.
 Alignments with insertion/deletions will be ignored. 
 Only continuous, un-interrupted read alignments will be used.
 Any spliced alignments should be resolved (e.g., by splitting) before
 running HAMR, e.g., using GATK
 java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam> -o <input.splitN.bam> -U ALLOW_N_CIGAR_READS
 
-Installing HAMR: 
-HAMR includes pre-compiled binary programs.
 
-If neccessary, to re-compile and Samtools library is installed in the default location use:
-	make clean
-	make
-if Samtools is installed elsewhere use:
-	make clean
-	make SAMTOOLS_DIR=[location where samtools library is installed]
+## Operating instructions
 
+Python with version v2.7.x is preferred. Python 3+ is not yet supported. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
 
-Operating instructions:
+### Usage
 
-Usage:
+```
 python hamr.py [align.bam] [genome.fa] [prediction_model_file] [output_dir] [output_prefix] [min_read_qual] [min_read_coverage] [seq_error_rate] [hypothesis] [max_p] [max_fdr] [min_ref_percent] [OPTIONS]
+```
 
-Examples:
-# download reference genome (e.g., hg19)
+### Examples
+
+#### download reference genome (e.g., hg19)
+
+```
 wget http://tesla.pcbi.upenn.edu/hamr/genomes/hg19_all_chr.fas
+```
 
-# run HAMR in genome-wide mode
+#### run HAMR in genome-wide mode
+
+```
 python hamr.py trial.human.bam  genomes/hg19_all_chr.fas models/euk_trna_mods.Rdata HAMRtest human 30 10 0.05 H4 0.01 0.05 0.05
+```
 
-# run HAMR in target mode (BED-restricted)
+#### run HAMR in target mode (BED-restricted)
+
+```
 python hamr.py trial.human.bam  genomes/hg19_all_chr.fas models/euk_trna_mods.Rdata HAMRtest human_region 30 10 0.05 H4 0.01 0.05 0.05 --target_bed region.human.bed
+```
 
 	
-NOTE: Python with version v2.7.x is preferred. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
-
-
-REQUIRED arguments:
+### REQUIRED arguments
 	<align.bam>
 		input BAM file
 	<genome.fa>
@@ -50,11 +68,9 @@ REQUIRED arguments:
 	<seq_error_rate>
 		The expected percentage of mismatches based solely on sequencing error
 	<hypothesis>
-		The hypothesis to be tested, either "H1" or "H4" (see HAMR
-paper. H4 is recommended).
+		The hypothesis to be tested, either "H1" or "H4" (see HAMR paper. H4 is recommended).
 	<max_p>
-		the maximum p-value cutoff. All sites with P-value><max_p>
-will be filtered out.
+		the maximum p-value cutoff. All sites with P-value><max_p> will be filtered out.
 	<max_fdr>
 		the maximum FDR cutoff
 	<refpercent>
@@ -65,21 +81,18 @@ will be filtered out.
 		prefix for HAMR output files
  
 
-OPTIONS:
+### OPTIONS
 	--target_bed <targets.bed>
 		BED file with regions of interest for HAMR analysis (this replaces the default genome-wide HAMR mode and restricts HAMR analysis to specific genomic regions listed in BED)
 	--paired_ends, -pe
 		indicates paired-end sequencing was used 
 	--filter_ends,-fe
 		excludes the first and last positions in the read from the analysis
-	--empirical_hamr_acc_threshold, -et
-		Calculate the threshold of HAMR accessiblity empiracally. If not used, HARM assumes accessibility is equal to min_cov (reasonable assumption at 10x or more)
-	--retain_tempfiles, -r
-		Do not delete files generated in intermediate steps. Useful for debugging
 
 
-Copyright:
-	Copyright (c) 2013-2016 University of Pennsylvania
+
+## Copyright
+	Copyright (c) 2013-2018 University of Pennsylvania
 
 	Permission is hereby granted, free of charge, to any person obtaining a
 	copy of this software and associated documentation files (the "Software"),
