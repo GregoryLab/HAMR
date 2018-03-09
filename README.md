@@ -22,8 +22,10 @@ Alignments with insertion/deletions will be ignored.
 Only continuous, un-interrupted read alignments will be used.
 Any spliced alignments should be resolved (e.g., by splitting) before
 running HAMR, e.g., using GATK
-java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam> -o <input.splitN.bam> -U ALLOW_N_CIGAR_READS
 
+```
+java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam> -o <input.splitN.bam> -U ALLOW_N_CIGAR_READS
+```
 
 ## Operating instructions
 
