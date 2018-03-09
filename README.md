@@ -1,7 +1,17 @@
 # High Throughput Annotation of Modified Ribonucleotides
 
+HAMR detects modified ribonucleotides based upon their ability to intefere with Watson-Crick base pairing. This leads to reverse transcriptase base misincorporations, which can be detected as mismatched from the reference genonme in cDNA-based RNA-seq libraries. HAMR tabulates these mismatches and tests for patterns of mismatches that cannot be explained by:
+1. Sequencing errors
+2. Single nucleotide polymorphisms (SNPs)
+3. RNA editing 
 
-HAMR takes in a coordinate-sorted BAM file with mapped reads. Reads should be mapped with m>0 mismatches: patterns of mismatches will be used to detect and predict identity of modifications. HAMR outputs predicted modification sites including identity of the modifications.
+HAMR's assumptions only hold true for a haploid or diploid genome. 
+
+HAMR input consists of coordinate-sorted mapped reads in BAM format, and a reference genome in FASTA format. Reads should be mapped with at least 1 mismatch, and at a suggest rate of 0.06 * mean read length. HAMR outputs predicted modification sites, and predicted  modification identity.
+
+Please cite the following papers when using HAMR:
+1. [HAMR: high-throughput annotation of modified ribonucleotides](https://dx.doi.org/10.1261/rna.036806.112)
+2. [Chemical Modifications Mark Alternatively Spliced and Uncapped Messenger RNAs in Arabidopsis](https://doi.org/10.1105/tpc.15.00591)
 
 ## Installing HAMR
 
