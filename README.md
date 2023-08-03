@@ -39,7 +39,7 @@ java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam>
 
 ## Operating instructions
 
-Python with version v2.7.x is preferred. Python 3+ is not yet supported. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
+HAMR now supports Python 3.x.x. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
 
 ### Usage
 
