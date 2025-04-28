@@ -40,6 +40,11 @@ x = read.table(infn, as.is=T, sep="\t",
   col.names=c('chr', 'bp', 'strand',
     'refnuc', 'A', 'C', 'G', 'T', 'nonref'))
 
+# 2025-03-12: adopting 1-based coordinate system for HAMR's incorporation into HAMRLNC
+# original edit by github user ritututeja on 2020-12-11
+# THIS CHANGES HAMR OUTPUT: raw.txt, mods.txt
+x$bp = x$bp + 1
+
 # select rows with A/C/G/T
 u<-grepl('N',x$refnuc) 
 x<-x[u==FALSE,] 

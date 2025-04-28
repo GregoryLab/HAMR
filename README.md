@@ -39,7 +39,7 @@ java -jar GenomeAnalysisTK.jar -T SplitNCigarReads -R <genome.fa> -I <input.bam>
 
 ## Operating instructions
 
-Python with version v2.7.x is preferred. Python 3+ is not yet supported. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
+HAMR now supports Python 3.x.x. Rscript and samtools are required for running HAMR (make sure they are in searchable path).
 
 ### Usage
 
@@ -104,7 +104,7 @@ python hamr.py trial.human.bam  genomes/hg19_all_chr.fas models/euk_trna_mods.Rd
 
 
 ## Copyright
-	Copyright (c) 2013-2018 University of Pennsylvania
+	Copyright (c) 2013-2023 University of Pennsylvania
 
 	Permission is hereby granted, free of charge, to any person obtaining a
 	copy of this software and associated documentation files (the "Software"),
